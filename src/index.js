@@ -731,14 +731,14 @@ client.on(
 
 
         /*
-          Do not store a current stream ID here.
+          Do not save a current stream ID here.
 
-          If this streamer is already live when
-          added, last_stream_id remains NULL.
+          If the streamer is already live,
+          last_stream_id stays NULL.
 
-          On the next Twitch poll, their current
-          stream will therefore be treated as new
-          and a notification will be sent.
+          The next Twitch poll will see the
+          current stream as new and send the
+          notification.
         */
 
 
@@ -859,6 +859,12 @@ client.on(
             : "Not configured";
 
 
+        const header =
+          `**Twitch notifications**\n` +
+          `Channel: ${channelText}\n\n` +
+          `**Tracked streamers (${streamers.length})**\n`;
+
+
         const lines =
           streamers.map(
             (
@@ -868,18 +874,91 @@ client.on(
           );
 
 
+        /*
+          Discord limits normal message
+          content to 2000 characters.
+
+          Split the list into multiple
+          messages automatically.
+        */
+
+        const messages =
+          [];
+
+
+        let currentMessage =
+          header;
+
+
+        for (
+          const line
+          of lines
+        ) {
+
+          const nextLine =
+            `${line}\n`;
+
+
+          if (
+            (
+              currentMessage +
+              nextLine
+            ).length > 2000
+          ) {
+
+            messages.push(
+              currentMessage.trimEnd()
+            );
+
+
+            currentMessage =
+              `**Tracked streamers continued**\n${nextLine}`;
+
+          } else {
+
+            currentMessage +=
+              nextLine;
+          }
+        }
+
+
+        if (
+          currentMessage.length > 0
+        ) {
+
+          messages.push(
+            currentMessage.trimEnd()
+          );
+        }
+
+
+        /*
+          First chunk replies to the
+          slash command.
+        */
+
         await interaction.reply({
           content:
-            `**Twitch notifications**\n` +
-
-            `Channel: ${channelText}\n\n` +
-
-            `**Tracked streamers (${streamers.length})**\n` +
-
-            lines.join(
-              "\n"
-            ),
+            messages[0],
         });
+
+
+        /*
+          Additional chunks are sent as
+          public follow-up messages.
+        */
+
+        for (
+          let i = 1;
+          i < messages.length;
+          i++
+        ) {
+
+          await interaction.followUp({
+            content:
+              messages[i],
+          });
+        }
 
 
         return;
