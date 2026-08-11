@@ -865,21 +865,27 @@ client.on(
           `**Tracked streamers (${streamers.length})**\n`;
 
 
+        /*
+          Streamer names are:
+          - bold
+          - clickable
+          - linked to Twitch
+        */
+
         const lines =
           streamers.map(
             (
               streamer
             ) =>
-              `• [${streamer.twitch_display_name}](https://www.twitch.tv/${streamer.twitch_username})`
+              `• **[${streamer.twitch_display_name}](https://www.twitch.tv/${streamer.twitch_username})**`
           );
 
 
         /*
-          Discord limits normal message
-          content to 2000 characters.
+          Discord limits message content
+          to 2000 characters.
 
-          Split the list into multiple
-          messages automatically.
+          Split long lists automatically.
         */
 
         const messages =
@@ -933,19 +939,24 @@ client.on(
 
 
         /*
-          First chunk replies to the
-          slash command.
+          SuppressEmbeds prevents Twitch
+          links from generating preview cards.
+
+          The names remain clickable.
         */
 
         await interaction.reply({
           content:
             messages[0],
+
+          flags:
+            MessageFlags.SuppressEmbeds,
         });
 
 
         /*
-          Additional chunks are sent as
-          public follow-up messages.
+          Any additional chunks are also
+          public, with link previews suppressed.
         */
 
         for (
@@ -957,6 +968,9 @@ client.on(
           await interaction.followUp({
             content:
               messages[i],
+
+            flags:
+              MessageFlags.SuppressEmbeds,
           });
         }
 
