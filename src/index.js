@@ -21,7 +21,9 @@ import {
   updateTwitchIdentity,
 } from "./database.js";
 
-import { deployCommands } from "./deploy-commands.js";
+import {
+  deployCommands,
+} from "./deploy-commands.js";
 
 import {
   getStreams,
@@ -36,9 +38,12 @@ const requiredEnv = [
   "TWITCH_CLIENT_SECRET",
 ];
 
-const missingEnv = requiredEnv.filter(
-  (key) => !process.env[key]
-);
+
+const missingEnv =
+  requiredEnv.filter(
+    (key) => !process.env[key]
+  );
+
 
 if (missingEnv.length > 0) {
   throw new Error(
@@ -47,45 +52,47 @@ if (missingEnv.length > 0) {
 }
 
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-  ],
-});
+const client =
+  new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+    ],
+  });
 
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS =
+  60_000;
 
-let streamCheckRunning = false;
+
+let streamCheckRunning =
+  false;
 
 
 // ========================================
 // HELPERS
 // ========================================
 
-function cleanTwitchUsername(input) {
+function cleanTwitchUsername(
+  input
+) {
   return input
     .trim()
 
-    // https://twitch.tv/username
     .replace(
       /^https?:\/\/(?:www\.)?twitch\.tv\//i,
       ""
     )
 
-    // twitch.tv/username
     .replace(
       /^twitch\.tv\//i,
       ""
     )
 
-    // remove anything after username
     .replace(
       /\/.*$/,
       ""
     )
 
-    // @username
     .replace(
       /^@/,
       ""
@@ -99,9 +106,13 @@ function cleanTwitchUsername(input) {
 // TWITCH EMBED
 // ========================================
 
-function createTwitchEmbed(stream) {
+function createTwitchEmbed(
+  stream
+) {
+
   const username =
     stream.user_login;
+
 
   const twitchUrl =
     `https://www.twitch.tv/${username}`;
@@ -109,19 +120,18 @@ function createTwitchEmbed(stream) {
 
   let thumbnail =
     stream.thumbnail_url
+
       .replace(
         "{width}",
         "1280"
       )
+
       .replace(
         "{height}",
         "720"
       );
 
 
-  // Helps Discord fetch the current
-  // stream thumbnail instead of a
-  // previously cached image.
   thumbnail +=
     `?t=${Date.now()}`;
 
@@ -148,24 +158,28 @@ function createTwitchEmbed(stream) {
 
     .addFields(
       {
-        name: "Game",
+        name:
+          "Game",
 
         value:
           stream.game_name ||
           "Unknown",
 
-        inline: false,
+        inline:
+          false,
       },
 
       {
-        name: "Viewers",
+        name:
+          "Viewers",
 
         value:
           Number(
             stream.viewer_count
           ).toLocaleString(),
 
-        inline: false,
+        inline:
+          false,
       }
     )
 
@@ -174,7 +188,8 @@ function createTwitchEmbed(stream) {
     )
 
     .setFooter({
-      text: "Twitch",
+      text:
+        "Twitch",
     })
 
     .setTimestamp();
@@ -189,6 +204,7 @@ async function sendLiveNotification(
   notification,
   stream
 ) {
+
   try {
 
     const channel =
@@ -204,7 +220,7 @@ async function sendLiveNotification(
     ) {
 
       console.error(
-        `Channel ${notification.notification_channel_id} is not a usable guild text channel.`
+        `Channel ${notification.notification_channel_id} is not a usable text channel or thread.`
       );
 
       return false;
@@ -218,20 +234,40 @@ async function sendLiveNotification(
     if (me) {
 
       const permissions =
-        channel.permissionsFor(me);
+        channel.permissionsFor(
+          me
+        );
+
+
+      const isThread =
+        channel.isThread();
+
+
+      const canSend =
+        isThread
+
+          ? permissions?.has(
+              PermissionFlagsBits.SendMessagesInThreads
+            )
+
+          : permissions?.has(
+              PermissionFlagsBits.SendMessages
+            );
+
+
+      const canEmbed =
+        permissions?.has(
+          PermissionFlagsBits.EmbedLinks
+        );
 
 
       if (
-        !permissions?.has(
-          PermissionFlagsBits.SendMessages
-        ) ||
-        !permissions?.has(
-          PermissionFlagsBits.EmbedLinks
-        )
+        !canSend ||
+        !canEmbed
       ) {
 
         console.error(
-          `Missing Send Messages or Embed Links in ${channel.guild.name} / #${channel.name}.`
+          `Missing permission to send Twitch notifications in ${channel.guild.name} / ${channel.name}.`
         );
 
         return false;
@@ -241,13 +277,15 @@ async function sendLiveNotification(
 
     await channel.send({
       embeds: [
-        createTwitchEmbed(stream)
+        createTwitchEmbed(
+          stream
+        ),
       ],
     });
 
 
     console.log(
-      `Sent notification for ${stream.user_name} in ${channel.guild.name}.`
+      `Sent notification for ${stream.user_name} in ${channel.guild.name} / ${channel.name}.`
     );
 
 
@@ -261,6 +299,7 @@ async function sendLiveNotification(
       error
     );
 
+
     return false;
   }
 }
@@ -272,13 +311,15 @@ async function sendLiveNotification(
 
 async function checkStreams() {
 
-  // Prevent two polls from overlapping
-  if (streamCheckRunning) {
+  if (
+    streamCheckRunning
+  ) {
     return;
   }
 
 
-  streamCheckRunning = true;
+  streamCheckRunning =
+    true;
 
 
   try {
@@ -293,13 +334,6 @@ async function checkStreams() {
       return;
     }
 
-
-    /*
-      Multiple Discord servers may track
-      the same Twitch account.
-
-      Only query each Twitch user once.
-    */
 
     const uniqueUserIds = [
       ...new Set(
@@ -316,12 +350,6 @@ async function checkStreams() {
         uniqueUserIds
       );
 
-
-    /*
-      Twitch user ID
-            ↓
-      current stream object
-    */
 
     const liveByUserId =
       new Map(
@@ -345,17 +373,10 @@ async function checkStreams() {
         );
 
 
-      // Streamer is offline.
       if (!stream) {
         continue;
       }
 
-
-      /*
-        If their Twitch username or
-        display name changed, update our
-        stored copy.
-      */
 
       if (
         notification.twitch_username
@@ -377,19 +398,11 @@ async function checkStreams() {
       }
 
 
-      /*
-        If Twitch's current stream ID
-        matches the last stream ID we
-        successfully notified for,
-        we've already handled this stream.
-      */
-
       if (
         notification.last_stream_id
           ===
         stream.id
       ) {
-
         continue;
       }
 
@@ -405,14 +418,6 @@ async function checkStreams() {
           stream
         );
 
-
-      /*
-        Only save the stream ID AFTER the
-        Discord message successfully sends.
-
-        If Discord fails temporarily,
-        the bot will retry next poll.
-      */
 
       if (sent) {
 
@@ -435,7 +440,8 @@ async function checkStreams() {
 
   } finally {
 
-    streamCheckRunning = false;
+    streamCheckRunning =
+      false;
   }
 }
 
@@ -447,7 +453,9 @@ async function checkStreams() {
 client.on(
   Events.InteractionCreate,
 
-  async (interaction) => {
+  async (
+    interaction
+  ) => {
 
     if (
       !interaction.isChatInputCommand()
@@ -488,7 +496,8 @@ client.on(
       // =================================
 
       if (
-        subcommand === "setup"
+        subcommand ===
+        "setup"
       ) {
 
         const channel =
@@ -504,7 +513,9 @@ client.on(
             ?.members.me;
 
 
-        if (botMember) {
+        if (
+          botMember
+        ) {
 
           const permissions =
             channel.permissionsFor(
@@ -512,19 +523,38 @@ client.on(
             );
 
 
+          const isThread =
+            channel.isThread();
+
+
+          const canSend =
+            isThread
+
+              ? permissions?.has(
+                  PermissionFlagsBits.SendMessagesInThreads
+                )
+
+              : permissions?.has(
+                  PermissionFlagsBits.SendMessages
+                );
+
+
           if (
-            !permissions?.has(
-              PermissionFlagsBits.SendMessages
-            )
+            !canSend
           ) {
 
             await interaction.reply({
               content:
-                `I can't send messages in ${channel}. Give me **Send Messages** permission there first.`,
+                isThread
+
+                  ? `I can't send messages in ${channel}. Give me Send Messages in Threads permission first.`
+
+                  : `I can't send messages in ${channel}. Give me Send Messages permission first.`,
 
               flags:
                 MessageFlags.Ephemeral,
             });
+
 
             return;
           }
@@ -538,11 +568,12 @@ client.on(
 
             await interaction.reply({
               content:
-                `I don't have **Embed Links** permission in ${channel}.`,
+                `I don't have Embed Links permission in ${channel}.`,
 
               flags:
                 MessageFlags.Ephemeral,
             });
+
 
             return;
           }
@@ -555,7 +586,6 @@ client.on(
         );
 
 
-        // Success response is public.
         await interaction.reply({
           content:
             `Twitch notifications will now be sent in ${channel}.`,
@@ -571,7 +601,8 @@ client.on(
       // =================================
 
       if (
-        subcommand === "add"
+        subcommand ===
+        "add"
       ) {
 
         const input =
@@ -588,7 +619,9 @@ client.on(
           );
 
 
-        if (!username) {
+        if (
+          !username
+        ) {
 
           await interaction.reply({
             content:
@@ -597,6 +630,7 @@ client.on(
             flags:
               MessageFlags.Ephemeral,
           });
+
 
           return;
         }
@@ -610,7 +644,7 @@ client.on(
 
         if (
           !server
-          ?.notification_channel_id
+            ?.notification_channel_id
         ) {
 
           await interaction.reply({
@@ -621,17 +655,10 @@ client.on(
               MessageFlags.Ephemeral,
           });
 
+
           return;
         }
 
-
-        /*
-          Twitch lookup may take long enough
-          that Discord needs an acknowledgement.
-
-          This defer is public because the
-          final success message should be public.
-        */
 
         await interaction.deferReply();
 
@@ -642,16 +669,9 @@ client.on(
           );
 
 
-        if (!twitchUser) {
-
-          /*
-            A reply's ephemeral/public state
-            cannot be changed after deferring.
-
-            Delete the public "thinking"
-            response and send a private
-            follow-up instead.
-          */
+        if (
+          !twitchUser
+        ) {
 
           await interaction
             .deleteReply()
@@ -680,7 +700,9 @@ client.on(
           );
 
 
-        if (existingById) {
+        if (
+          existingById
+        ) {
 
           await interaction
             .deleteReply()
@@ -709,28 +731,14 @@ client.on(
 
 
         /*
-          IMPORTANT:
+          Do not store a current stream ID here.
 
-          We deliberately DO NOT check the
-          stream here and DO NOT save its
-          current stream.id.
+          If this streamer is already live when
+          added, last_stream_id remains NULL.
 
-          Therefore:
-
-          streamer already live when added
-                  ↓
-          last_stream_id = NULL
-                  ↓
-          next Twitch poll sees current
-          stream.id as new
-                  ↓
-          notification gets sent
-                  ↓
-          stream.id is saved
-
-          This means adding somebody who is
-          already live WILL trigger an embed
-          within roughly the next minute.
+          On the next Twitch poll, their current
+          stream will therefore be treated as new
+          and a notification will be sent.
         */
 
 
@@ -749,7 +757,8 @@ client.on(
       // =================================
 
       if (
-        subcommand === "remove"
+        subcommand ===
+        "remove"
       ) {
 
         const input =
@@ -773,7 +782,9 @@ client.on(
           );
 
 
-        if (!existing) {
+        if (
+          !existing
+        ) {
 
           await interaction.reply({
             content:
@@ -794,7 +805,6 @@ client.on(
         );
 
 
-        // Success response is public.
         await interaction.reply({
           content:
             `Removed **${existing.twitch_display_name}** from Twitch notifications.`,
@@ -810,7 +820,8 @@ client.on(
       // =================================
 
       if (
-        subcommand === "list"
+        subcommand ===
+        "list"
       ) {
 
         const streamers =
@@ -823,8 +834,6 @@ client.on(
           streamers.length === 0
         ) {
 
-          // Normal informational response:
-          // public.
           await interaction.reply({
             content:
               "No Twitch streamers are currently being tracked.",
@@ -852,12 +861,13 @@ client.on(
 
         const lines =
           streamers.map(
-            (streamer) =>
+            (
+              streamer
+            ) =>
               `• [${streamer.twitch_display_name}](https://www.twitch.tv/${streamer.twitch_username})`
           );
 
 
-        // Public list.
         await interaction.reply({
           content:
             `**Twitch notifications**\n` +
@@ -866,7 +876,9 @@ client.on(
 
             `**Tracked streamers (${streamers.length})**\n` +
 
-            lines.join("\n"),
+            lines.join(
+              "\n"
+            ),
         });
 
 
@@ -874,7 +886,9 @@ client.on(
       }
 
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
         `Command /notif ${subcommand} failed:`,
@@ -887,11 +901,6 @@ client.on(
 
 
       try {
-
-        /*
-          Errors should only be visible
-          to the user who ran the command.
-        */
 
         if (
           interaction.deferred
@@ -938,7 +947,9 @@ client.on(
         }
 
 
-      } catch (replyError) {
+      } catch (
+        replyError
+      ) {
 
         console.error(
           "Could not send command error response:",
@@ -957,7 +968,9 @@ client.on(
 client.once(
   Events.ClientReady,
 
-  async (readyClient) => {
+  async (
+    readyClient
+  ) => {
 
     console.log(
       `Logged in as ${readyClient.user.tag}`
@@ -969,21 +982,8 @@ client.once(
     );
 
 
-    /*
-      Check immediately when the bot
-      starts.
-
-      Because stream IDs are stored in
-      SQLite, restarting the bot will not
-      duplicate already-sent streams.
-    */
-
     await checkStreams();
 
-
-    /*
-      Then check every 60 seconds.
-    */
 
     setInterval(
       checkStreams,
@@ -999,11 +999,6 @@ client.once(
 
 async function start() {
 
-  /*
-    Automatically register/update
-    /notif whenever Render starts.
-  */
-
   await deployCommands();
 
 
@@ -1014,7 +1009,9 @@ async function start() {
 
 
 start().catch(
-  (error) => {
+  (
+    error
+  ) => {
 
     console.error(
       "Bot failed to start:",
@@ -1022,6 +1019,8 @@ start().catch(
     );
 
 
-    process.exit(1);
+    process.exit(
+      1
+    );
   }
 );
