@@ -103,7 +103,7 @@ async function sendLiveNotification(notification, stream) {
 
     if (!channel || !channel.isTextBased() || !("guild" in channel)) {
       console.error(
-        `Channel ${notification.notification_channel_id} is not a usable guild text channel.`,
+        `channel ${notification.notification_channel_id} is not a usable guild text channel.`,
       );
       return false;
     }
@@ -122,7 +122,7 @@ async function sendLiveNotification(notification, stream) {
 
       if (!canSend || !canEmbed) {
         console.error(
-          `Missing Send Messages or Embed Links in ${channel.guild.name} / #${channel.name}.`,
+          `missing send Messages or embed links in ${channel.guild.name} / #${channel.name}.`,
         );
         return false;
       }
@@ -133,13 +133,13 @@ async function sendLiveNotification(notification, stream) {
     });
 
     console.log(
-      `🔴 Sent notification for ${stream.user_name} in ${channel.guild.name}.`,
+      `sent notification for ${stream.user_name} in ${channel.guild.name}.`,
     );
 
     return true;
   } catch (error) {
     console.error(
-      `Could not send notification for ${stream.user_name}:`,
+      `could not send notification for ${stream.user_name}:`,
       error,
     );
     return false;
@@ -252,7 +252,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ) {
           await interaction.reply({
             content:
-              `❌ I can't send messages in ${channel}. Give me **Send Messages** permission there first.`,
+              `i can't send messages in ${channel}. give me **send messages** permission there first.`,
             flags: MessageFlags.Ephemeral,
           });
           return;
@@ -261,7 +261,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (!permissions?.has(PermissionFlagsBits.EmbedLinks)) {
           await interaction.reply({
             content:
-              `❌ I don't have **Embed Links** permission in ${channel}.`,
+              `i don't have **embed links** permission in ${channel}.`,
             flags: MessageFlags.Ephemeral,
           });
           return;
@@ -272,7 +272,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.reply({
         content:
-          `✅ Twitch notifications will now be sent in ${channel}.`,
+          `twitch notifications will now be sent in ${channel}.`,
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -292,7 +292,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!username) {
         await interaction.editReply({
           content:
-            "❌ Please give me a Twitch username or Twitch channel URL.",
+            "please give me a twitch username or twitch channel url.",
         });
         return;
       }
@@ -302,7 +302,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!server?.notification_channel_id) {
         await interaction.editReply({
           content:
-            "❌ Run `/notif setup` first so I know where to send notifications.",
+            "run `/notif setup` first so i know where to send notifications.",
         });
         return;
       }
@@ -312,7 +312,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!twitchUser) {
         await interaction.editReply({
           content:
-            `❌ I couldn't find a Twitch channel named **${username}**.`,
+            `i couldn't find a twitch channel named **${username}**.`,
         });
         return;
       }
@@ -325,7 +325,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (existingById) {
         await interaction.editReply({
           content:
-            `⚠️ **${twitchUser.display_name}** is already being tracked.`,
+            `**${twitchUser.display_name}** is already being tracked.`,
         });
         return;
       }
@@ -346,7 +346,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.editReply({
         content:
-          `✅ Added **${twitchUser.display_name}** to Twitch notifications.`,
+          `added **${twitchUser.display_name}** to twitch notifications.`,
       });
       return;
     }
@@ -366,7 +366,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!existing) {
         await interaction.reply({
           content:
-            `❌ **${username}** isn't currently being tracked.`,
+            `**${username}** isn't currently being tracked.`,
           flags: MessageFlags.Ephemeral,
         });
         return;
@@ -379,7 +379,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.reply({
         content:
-          `✅ Removed **${existing.twitch_display_name}** from Twitch notifications.`,
+          `removed **${existing.twitch_display_name}** from twitch notifications.`,
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -391,7 +391,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (streamers.length === 0) {
         await interaction.reply({
           content:
-            "No Twitch streamers are currently being tracked.",
+            "no twitch streamers are currently being tracked.",
           flags: MessageFlags.Ephemeral,
         });
         return;
@@ -400,7 +400,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const server = getServer(guildId);
       const channelText = server?.notification_channel_id
         ? `<#${server.notification_channel_id}>`
-        : "Not configured";
+        : "not configured";
 
       const lines = streamers.map(
         (streamer) =>
@@ -409,9 +409,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       await interaction.reply({
         content:
-          `**Twitch notifications**\n` +
-          `Channel: ${channelText}\n\n` +
-          `**Tracked streamers (${streamers.length})**\n` +
+          `**twitch notifications**\n` +
+          `channel: ${channelText}\n\n` +
+          `**tracked streamers (${streamers.length})**\n` +
           lines.join("\n"),
         flags: MessageFlags.Ephemeral,
       });
@@ -424,7 +424,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const errorMessage = {
       content:
-        "❌ Something went wrong while running that command. Check the Render logs for details.",
+        "something went wrong while running that command. check the render logs for details.",
     };
 
     try {
@@ -443,7 +443,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
     } catch (replyError) {
       console.error(
-        "Could not send command error response:",
+        "could not send command error response:",
         replyError,
       );
     }
