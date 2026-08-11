@@ -1,0 +1,17 @@
+{
+  "name": "twitch-notif-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord bot that sends Twitch go-live notifications using SQLite.",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=24.17.0 <25"
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3",
+    "discord.js": "14.26.5"
+  }
+}

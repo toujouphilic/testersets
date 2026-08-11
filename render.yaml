@@ -1,0 +1,27 @@
+services:
+  - type: worker
+    name: twitch-notif-bot
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeployTrigger: commit
+
+    disk:
+      name: twitch-notif-data
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      - key: NODE_VERSION
+        value: 24.17.0
+      - key: DATA_DIR
+        value: /var/data
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: TWITCH_CLIENT_ID
+        sync: false
+      - key: TWITCH_CLIENT_SECRET
+        sync: false
