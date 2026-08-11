@@ -247,7 +247,7 @@ async function sendLiveNotification(
 
 
     console.log(
-      `🔴 Sent notification for ${stream.user_name} in ${channel.guild.name}.`
+      `Sent notification for ${stream.user_name} in ${channel.guild.name}.`
     );
 
 
@@ -520,7 +520,7 @@ client.on(
 
             await interaction.reply({
               content:
-                `❌ I can't send messages in ${channel}. Give me **Send Messages** permission there first.`,
+                `I can't send messages in ${channel}. Give me **Send Messages** permission there first.`,
 
               flags:
                 MessageFlags.Ephemeral,
@@ -538,7 +538,7 @@ client.on(
 
             await interaction.reply({
               content:
-                `❌ I don't have **Embed Links** permission in ${channel}.`,
+                `I don't have **Embed Links** permission in ${channel}.`,
 
               flags:
                 MessageFlags.Ephemeral,
@@ -558,7 +558,7 @@ client.on(
         // Success response is public.
         await interaction.reply({
           content:
-            `✅ Twitch notifications will now be sent in ${channel}.`,
+            `Twitch notifications will now be sent in ${channel}.`,
         });
 
 
@@ -592,7 +592,7 @@ client.on(
 
           await interaction.reply({
             content:
-              "❌ Please give me a Twitch username or Twitch channel URL.",
+              "Please give me a Twitch username or Twitch channel URL.",
 
             flags:
               MessageFlags.Ephemeral,
@@ -615,7 +615,7 @@ client.on(
 
           await interaction.reply({
             content:
-              "❌ Run `/notif setup` first so I know where to send notifications.",
+              "Run `/notif setup` first so I know where to send notifications.",
 
             flags:
               MessageFlags.Ephemeral,
@@ -662,7 +662,7 @@ client.on(
 
           await interaction.followUp({
             content:
-              `❌ I couldn't find a Twitch channel named **${username}**.`,
+              `I couldn't find a Twitch channel named **${username}**.`,
 
             flags:
               MessageFlags.Ephemeral,
@@ -691,7 +691,7 @@ client.on(
 
           await interaction.followUp({
             content:
-              `⚠️ **${twitchUser.display_name}** is already being tracked.`,
+              `**${twitchUser.display_name}** is already being tracked.`,
 
             flags:
               MessageFlags.Ephemeral,
@@ -736,7 +736,7 @@ client.on(
 
         await interaction.editReply({
           content:
-            `✅ Added **${twitchUser.display_name}** to Twitch notifications.`,
+            `Added **${twitchUser.display_name}** to Twitch notifications.`,
         });
 
 
@@ -777,7 +777,7 @@ client.on(
 
           await interaction.reply({
             content:
-              `❌ **${username}** isn't currently being tracked.`,
+              `**${username}** isn't currently being tracked.`,
 
             flags:
               MessageFlags.Ephemeral,
@@ -797,7 +797,7 @@ client.on(
         // Success response is public.
         await interaction.reply({
           content:
-            `✅ Removed **${existing.twitch_display_name}** from Twitch notifications.`,
+            `Removed **${existing.twitch_display_name}** from Twitch notifications.`,
         });
 
 
@@ -883,7 +883,7 @@ client.on(
 
 
       const errorMessage =
-        "❌ Something went wrong while running that command. Check the Render logs for details.";
+        "Something went wrong while running that command. Check the Render logs for details.";
 
 
       try {
@@ -960,7 +960,7 @@ client.once(
   async (readyClient) => {
 
     console.log(
-      `✅ Logged in as ${readyClient.user.tag}`
+      `Logged in as ${readyClient.user.tag}`
     );
 
 
