@@ -118,3 +118,14 @@ export async function getStreams(userIds) {
 
   return streams;
 }
+
+export async function getLatestArchiveVod(userId, messageDate) {
+  const data=await twitchFetch(`https://api.twitch.tv/helix/videos?user_id=${encodeURIComponent(userId)}&type=archive&first=20`);
+  const videos=data.data||[];
+  const candidates=videos.filter(v=>+new Date(v.created_at)<=+messageDate);
+  // A VOD cannot be reliably matched using creation time alone. Return only when its
+  // known duration actually covers the message timestamp.
+  const seconds=s=>{let total=0;for(const [,n,u] of s.matchAll(/(\d+)([hms])/g))total+=Number(n)*({h:3600,m:60,s:1}[u]);return total};
+  const found=candidates.find(v=>+messageDate < +new Date(v.created_at)+seconds(v.duration)*1000);
+  return found?.id||null;
+}

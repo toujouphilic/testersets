@@ -1,3 +1,4 @@
+import { startChatlog, chatlogSetup, chatlogAdd, chatlogRemove, chatlogList } from "./chatlog.js";
 import {
   Client,
   EmbedBuilder,
@@ -463,6 +464,35 @@ client.on(
       return;
     }
 
+
+    if (interaction.commandName === 'chatlog') {
+      if (!interaction.guildId) return;
+      try {
+        const sub = interaction.options.getSubcommand();
+        if (sub === 'setup') {
+          const channel = interaction.options.getChannel('channel', true);
+          chatlogSetup(interaction.guildId, channel.id);
+          await interaction.reply({content:`Chat logs will be sent to ${channel}.`});
+        } else if (sub === 'addchannel') {
+          const user=interaction.options.getString('user',true);
+          const name=interaction.options.getString('twitch',true);
+          chatlogAdd(interaction.guildId,user,name);
+          await interaction.reply({content:`Now logging **${user}** in **#${name}** only.`});
+        } else if (sub === 'removechannel') {
+          const user=interaction.options.getString('user',true);
+          const name=interaction.options.getString('twitch',true);
+          chatlogRemove(interaction.guildId,user,name);
+          await interaction.reply({content:`Stopped logging **${user}** in **#${name}**.`});
+        } else if (sub === 'list') {
+          const watches=chatlogList(interaction.guildId);
+          await interaction.reply({content:watches.length?`Watched user/chat pairs:\n${watches.map(x=>`• **${x.username}** in #${x.channel_name}`).join('\n').slice(0,1800)}`:'No watched pairs yet.'});
+
+        }
+      } catch (error) {
+        await interaction.reply({content:`Chatlog error: ${error.message}`,flags:MessageFlags.Ephemeral}).catch(()=>{});
+      }
+      return;
+    }
 
     if (
       interaction.commandName
@@ -1075,6 +1105,7 @@ client.once(
     );
 
 
+    startChatlog(client);
     await checkStreams();
 
 
