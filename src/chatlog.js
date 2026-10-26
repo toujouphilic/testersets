@@ -30,13 +30,6 @@ function parse(line) {
 function clock(date) { return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}).format(date); }
 function uptime(ms){const s=Math.floor(ms/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 function safeText(s){return (s||'').replace(/@everyone|@here|<@!?\d+>|<@&\d+>/g,m=>'\\'+m);}
-// Discord controls embed sizing; a long nonbreaking invisible line provides a consistent minimum width.
-const EMBED_WIDTH_PAD = '\u2800'.repeat(65);
-function padEmbed(description) {
-  return description.length + EMBED_WIDTH_PAD.length + 1 <= 4096
-    ? `${description}\n${EMBED_WIDTH_PAD}`
-    : description;
-}
 function badges(tags){const list=(tags.badges||'').split(',').map(s=>s.split('/')[0]);const out=[];if(list.includes('vip')&&process.env.CHATLOG_VIP_EMOJI)out.push(process.env.CHATLOG_VIP_EMOJI);if((list.includes('partner')||list.includes('verified'))&&process.env.CHATLOG_PARTNER_EMOJI)out.push(process.env.CHATLOG_PARTNER_EMOJI);return out.join(' ');}
 async function handleMessage(m,client){
   if(!watchedUsers().has(m.login))return;
@@ -64,9 +57,9 @@ async function handleMessage(m,client){
   const color=/^#[0-9a-fA-F]{6}$/.test(m.tags.color||'')?m.tags.color:'#9146FF';
   const embeds=[];
   if(header){const name=`${m.tags['display-name']||m.login} ${badges(m.tags)} in #${m.channel}${vod?' · VOD':''}`.trim();
-    const e=new EmbedBuilder().setColor(color).setDescription(padEmbed(description.slice(0,4096))).setTimestamp(date).setTitle(name.slice(0,256));
+    const e=new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setTimestamp(date).setTitle(name.slice(0,256));
     if(vod)e.setURL(`https://www.twitch.tv/videos/${vod}`);embeds.push(e);
-  }else embeds.push(new EmbedBuilder().setColor(color).setDescription(padEmbed(description.slice(0,4096))).setTimestamp(date));
+  }else embeds.push(new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setTimestamp(date));
   // Discord embeds have a 4096-character description limit. Keep the remainder, including complete replies.
   if(description.length>4096){let rest=description.slice(4096);while(rest.length){embeds.push(new EmbedBuilder().setColor(color).setDescription(rest.slice(0,4096)));rest=rest.slice(4096)}}
   for(const t of destinations){

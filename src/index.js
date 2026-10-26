@@ -477,7 +477,7 @@ client.on(
           const user=interaction.options.getString('user',true);
           const name=interaction.options.getString('twitch',true);
           chatlogAdd(interaction.guildId,user,name);
-          await interaction.reply({content:`Now logging **${user}** in **#${name}**.`});
+          await interaction.reply({content:`Now logging **${user}** in **#${name}** only.`});
         } else if (sub === 'removechannel') {
           const user=interaction.options.getString('user',true);
           const name=interaction.options.getString('twitch',true);
