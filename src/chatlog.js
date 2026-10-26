@@ -27,8 +27,16 @@ function parse(line) {
   const match=line.slice(i+1).match(/^:([^! ]+)!.* PRIVMSG #([^ ]+) :([\s\S]*)$/);
   return match ? {tags, login:match[1].toLowerCase(), channel:match[2].toLowerCase(), text:match[3]} : null;
 }
-function clock(date) { return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}).format(date); }
-function uptime(ms){const s=Math.floor(ms/1000);return `${Math.floor(s/3600)}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+function footerClock(date) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York', year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  const now = new Date();
+  const dayKey = d => new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+  const today=dayKey(now), current=dayKey(date);
+  const yesterday=dayKey(new Date(now.getTime()-86400000));
+  const prefix=current===today?'Today':current===yesterday?'Yesterday':`${parts.month}/${parts.day}/${parts.year}`;
+  return `${prefix} at ${parts.hour}:${parts.minute}`;
+}
+function uptime(ms){if(!Number.isFinite(ms)||ms<0)return '00:00:00';const s=Math.floor(ms/1000);return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 function safeText(s){return (s||'').replace(/@everyone|@here|<@!?\d+>|<@&\d+>/g,m=>'\\'+m);}
 function badges(tags){const list=(tags.badges||'').split(',').map(s=>s.split('/')[0]);const out=[];if(list.includes('vip')&&process.env.CHATLOG_VIP_EMOJI)out.push(process.env.CHATLOG_VIP_EMOJI);if((list.includes('partner')||list.includes('verified'))&&process.env.CHATLOG_PARTNER_EMOJI)out.push(process.env.CHATLOG_PARTNER_EMOJI);return out.join(' ');}
 async function handleMessage(m,client){
@@ -48,43 +56,23 @@ async function handleMessage(m,client){
       if(header)vod=await getLatestArchiveVod(user.id,date).catch(()=>null);
     }
   }catch(e){console.warn('Chatlog stream metadata:',e.message)}
-  const time=`${start?uptime(+date-start):'—'} / ${clock(date)}`;
+  const footer=`${footerClock(date)} / ${start?uptime(+date-start):'00:00:00'}`;
   const replyName=m.tags['reply-parent-display-name']||m.tags['reply-parent-user-login'];
   const replyText=m.tags['reply-parent-msg-body'];
   let description='';
   if(replyName){description+=`↳ Replying to **${safeText(replyName)}**${replyText!=null?`:\n> ${safeText(replyText).replace(/\n/g,'\n> ')}`:''}\n`}
-  description+=`${safeText(m.text)}\n-# ${time}`;
-  // Optional width hint: Discord chooses embed width; this is not pixel-perfect.
-  // Keep padding short and on its own line to avoid large/invalid descriptions.
-  const unpaddedDescription=description;
-  const pad='\u2800'.repeat(32);
-  if(description.length+pad.length+1<=4096)description+=`\n${pad}`;
+  description+=safeText(m.text);
   const color=/^#[0-9a-fA-F]{6}$/.test(m.tags.color||'')?m.tags.color:'#9146FF';
   const embeds=[];
   if(header){const name=`${m.tags['display-name']||m.login} ${badges(m.tags)} in #${m.channel}${vod?' · VOD':''}`.trim();
-    const e=new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setTimestamp(date).setTitle(name.slice(0,256));
+    const e=new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setFooter({text:footer}).setTitle(name.slice(0,256));
     if(vod)e.setURL(`https://www.twitch.tv/videos/${vod}`);embeds.push(e);
-  }else embeds.push(new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setTimestamp(date));
+  }else embeds.push(new EmbedBuilder().setColor(color).setDescription(description.slice(0,4096)).setFooter({text:footer}));
   // Discord embeds have a 4096-character description limit. Keep the remainder, including complete replies.
   if(description.length>4096){let rest=description.slice(4096);while(rest.length){embeds.push(new EmbedBuilder().setColor(color).setDescription(rest.slice(0,4096)));rest=rest.slice(4096)}}
   for(const t of destinations){
     try {const ch=await client.channels.fetch(t.channel_id);if(ch?.send)await ch.send({embeds,allowedMentions:{parse:[]}})}
-    catch(e){
-      console.error('Chatlog Discord send:',e.message);
-      // If Discord rejects the padded embed, retry without padding.
-      try {
-        const ch=await client.channels.fetch(t.channel_id);
-        if(ch?.send){
-          const plain=embeds.map((embed,i)=>{
-            const copy=EmbedBuilder.from(embed);
-            if(i===0)copy.setDescription(unpaddedDescription.slice(0,4096));
-            return copy;
-          });
-          await ch.send({embeds:plain,allowedMentions:{parse:[]}});
-          console.warn('Chatlog: delivered without padding after initial send failed');
-        }
-      }catch(retryError){console.error('Chatlog fallback send:',retryError.message)}
-    }
+    catch(e){console.error('Chatlog Discord send:',e.message)}
   }
 }
 function connect(client){
