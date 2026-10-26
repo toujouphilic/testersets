@@ -54,6 +54,11 @@ async function handleMessage(m,client){
   let description='';
   if(replyName){description+=`↳ Replying to **${safeText(replyName)}**${replyText!=null?`:\n> ${safeText(replyText).replace(/\n/g,'\n> ')}`:''}\n`}
   description+=`${safeText(m.text)}\n-# ${time}`;
+  // Optional width hint: Discord chooses embed width; this is not pixel-perfect.
+  // Keep padding short and on its own line to avoid large/invalid descriptions.
+  const unpaddedDescription=description;
+  const pad='\u2800'.repeat(32);
+  if(description.length+pad.length+1<=4096)description+=`\n${pad}`;
   const color=/^#[0-9a-fA-F]{6}$/.test(m.tags.color||'')?m.tags.color:'#9146FF';
   const embeds=[];
   if(header){const name=`${m.tags['display-name']||m.login} ${badges(m.tags)} in #${m.channel}${vod?' · VOD':''}`.trim();
@@ -64,7 +69,22 @@ async function handleMessage(m,client){
   if(description.length>4096){let rest=description.slice(4096);while(rest.length){embeds.push(new EmbedBuilder().setColor(color).setDescription(rest.slice(0,4096)));rest=rest.slice(4096)}}
   for(const t of destinations){
     try {const ch=await client.channels.fetch(t.channel_id);if(ch?.send)await ch.send({embeds,allowedMentions:{parse:[]}})}
-    catch(e){console.error('Chatlog Discord send:',e.message)}
+    catch(e){
+      console.error('Chatlog Discord send:',e.message);
+      // If Discord rejects the padded embed, retry without padding.
+      try {
+        const ch=await client.channels.fetch(t.channel_id);
+        if(ch?.send){
+          const plain=embeds.map((embed,i)=>{
+            const copy=EmbedBuilder.from(embed);
+            if(i===0)copy.setDescription(unpaddedDescription.slice(0,4096));
+            return copy;
+          });
+          await ch.send({embeds:plain,allowedMentions:{parse:[]}});
+          console.warn('Chatlog: delivered without padding after initial send failed');
+        }
+      }catch(retryError){console.error('Chatlog fallback send:',retryError.message)}
+    }
   }
 }
 function connect(client){
@@ -96,3 +116,14 @@ export function chatlogRemove(guildId,username,channelName){
   if(!channels().includes(channelName)&&ws?.readyState===WebSocket.OPEN)ws.send(`PART #${channelName}`);
 }
 export function chatlogList(guildId){return db.prepare('SELECT username,channel_name FROM chatlog_watches WHERE guild_id=? ORDER BY username,channel_name').all(guildId);}
+
+// Remove every watched user/chat pair for one Discord server, leaving the output channel unchanged.
+export function chatlogNuke(guildId){
+  const before=channels();
+  const result=db.prepare('DELETE FROM chatlog_watches WHERE guild_id=?').run(guildId);
+  const remaining=new Set(channels());
+  if(ws?.readyState===WebSocket.OPEN){
+    for(const name of before){if(!remaining.has(name))ws.send(`PART #${name}`)}
+  }
+  return result.changes;
+}

@@ -1,4 +1,4 @@
-import { startChatlog, chatlogSetup, chatlogAdd, chatlogRemove, chatlogList } from "./chatlog.js";
+import { startChatlog, chatlogSetup, chatlogAdd, chatlogRemove, chatlogList, chatlogNuke } from "./chatlog.js";
 import {
   Client,
   EmbedBuilder,
@@ -483,6 +483,14 @@ client.on(
           const name=interaction.options.getString('twitch',true);
           chatlogRemove(interaction.guildId,user,name);
           await interaction.reply({content:`Stopped logging **${user}** in **#${name}**.`});
+        } else if (sub === 'nuke') {
+          const confirm=interaction.options.getString('confirm',true);
+          if(confirm !== 'NUKE'){
+            await interaction.reply({content:'Nothing was deleted. Type `NUKE` exactly to confirm.',flags:MessageFlags.Ephemeral});
+          }else{
+            const count=chatlogNuke(interaction.guildId);
+            await interaction.reply({content:`Removed **${count}** watched user/chat pair(s) from this server. The Discord output channel is unchanged.`});
+          }
         } else if (sub === 'list') {
           const watches=chatlogList(interaction.guildId);
           await interaction.reply({content:watches.length?`Watched user/chat pairs:\n${watches.map(x=>`• **${x.username}** in #${x.channel_name}`).join('\n').slice(0,1800)}`:'No watched pairs yet.'});

@@ -78,7 +78,8 @@ export const chatlogCommand = new SlashCommandBuilder().setName('chatlog').setDe
 .addSubcommand(s=>s.setName('setup').setDescription('Choose Discord destination').addChannelOption(o=>o.setName('channel').setDescription('Discord channel or thread').addChannelTypes(ChannelType.GuildText,ChannelType.PublicThread,ChannelType.PrivateThread,ChannelType.AnnouncementThread).setRequired(true)))
 .addSubcommand(s=>s.setName('addchannel').setDescription('Watch a user in a Twitch chat').addStringOption(o=>o.setName('user').setDescription('Twitch username to log').setRequired(true)).addStringOption(o=>o.setName('twitch').setDescription('Twitch chat to watch').setRequired(true)))
 .addSubcommand(s=>s.setName('removechannel').setDescription('Stop watching a user in a Twitch chat').addStringOption(o=>o.setName('user').setDescription('Twitch username').setRequired(true)).addStringOption(o=>o.setName('twitch').setDescription('Twitch chat').setRequired(true)))
-.addSubcommand(s=>s.setName('list').setDescription('List watched users and chats'));
+.addSubcommand(s=>s.setName('list').setDescription('List watched users and chats'))
+.addSubcommand(s=>s.setName('nuke').setDescription('Remove ALL watched user/chat pairs for this server').addStringOption(o=>o.setName('confirm').setDescription('Type NUKE to confirm deleting every pair').setRequired(true)));
 export const commands = [
   chatlogCommand.toJSON(),
   notifCommand.toJSON(),
