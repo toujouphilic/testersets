@@ -3,6 +3,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
+import { voiceCommand } from "./voice-command.js";
 
 export const notifCommand = new SlashCommandBuilder()
   .setName("notif")
@@ -83,4 +84,5 @@ export const chatlogCommand = new SlashCommandBuilder().setName('chatlog').setDe
 export const commands = [
   chatlogCommand.toJSON(),
   notifCommand.toJSON(),
+  voiceCommand.toJSON(),
 ];
