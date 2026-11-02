@@ -31,7 +31,15 @@ export const voiceCommand = new SlashCommandBuilder()
       .addChoices(
         { name: "Scan VODs", value: "all" },
         { name: "Scan VODs, only titles matching filters", value: "filter" },
-        { name: "Live record audio (Twitch, for channels without VODs)", value: "live" })))
+        { name: "Live record audio (Twitch, for channels without VODs)", value: "live" }))
+    .addStringOption((o) => o.setName("past").setDescription("Also scan past videos? (default: only new ones)")
+      .addChoices(
+        { name: "None, only new videos", value: "0" },
+        { name: "Last 1", value: "1" },
+        { name: "Last 3", value: "3" },
+        { name: "Last 5", value: "5" },
+        { name: "Last 10", value: "10" },
+        { name: "All of them", value: "all" })))
   .addSubcommand((s) => s.setName("removechannel").setDescription("Stop watching a channel")
     .addStringOption(platformOption)
     .addStringOption((o) => o.setName("name").setDescription("Channel name").setRequired(true)))
