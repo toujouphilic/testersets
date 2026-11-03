@@ -1,5 +1,8 @@
 // /voice — controls for the voice scanner running on the Mac mini.
 //
+// /voice is only shown to people who can manage the server; /scan is the one command everyone sees.
+// (The scanner also only lets people outside its allowed_user_ids use scanning.)
+//
 // This file ONLY defines the command so it gets registered along with /notif and
 // /chatlog (deploy-commands.js replaces the whole command list on every start).
 // This Node bot never answers /voice: the scanner on the Mac logs in with the same
@@ -57,3 +60,14 @@ export const voiceCommand = new SlashCommandBuilder()
     .addSubcommand((s) => s.setName("disable").setDescription("Stop posting the daily summary in this server"))
     .addSubcommand((s) => s.setName("preview").setDescription("See today's summary (only you)"))
     .addSubcommand((s) => s.setName("now").setDescription("Post the summary now")));
+
+// /scan: for everyone. /scan add results are posted in the channel it's used in and go to the front of the queue.
+export const scanCommand = new SlashCommandBuilder()
+  .setName("scan")
+  .setDescription("Scan streams for Epax's voice")
+  .setDMPermission(false)
+  .addSubcommand((s) => s.setName("add").setDescription("Scan a Twitch VOD, YouTube video or playlist")
+    .addStringOption((o) => o.setName("url").setDescription("VOD / video / playlist link").setRequired(true))
+    .addStringOption((o) => o.setName("start").setDescription("Start from (e.g. 1h20m)")))
+  .addSubcommand((s) => s.setName("queue").setDescription("Your scans that are waiting or running"))
+  .addSubcommand((s) => s.setName("summary").setDescription("What your scans found, day by day"));
